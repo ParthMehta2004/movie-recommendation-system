@@ -3,9 +3,7 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
-# ----------------------------------------
-# Page configuration
-# ----------------------------------------
+
 st.set_page_config(
     page_title="Movie Recommendation System",
     page_icon="🎥",
@@ -30,21 +28,21 @@ def build_similarity_matrix(movies, ratings):
     Merge datasets, build a user-item matrix, and compute
     item-based cosine similarity between movies.
     """
-    # Merge ratings with movie titles
+    
     data = pd.merge(ratings, movies, on="movieId")
 
-    # Pivot: rows = users, columns = movie titles, values = ratings
+    
     user_item = data.pivot_table(
         index="userId",
         columns="title",
         values="rating"
     ).fillna(0)
 
-    # Transpose so rows = movies, then compute cosine similarity
+    
     movie_matrix = user_item.T
     similarity = cosine_similarity(movie_matrix)
 
-    # Wrap in a labelled DataFrame
+    
     sim_df = pd.DataFrame(
         similarity,
         index=movie_matrix.index,
@@ -62,13 +60,11 @@ def recommend_movies(movie_title, sim_df, top_n=5):
         return None
 
     scores = sim_df[movie_title].sort_values(ascending=False)
-    scores = scores.drop(labels=[movie_title])   # exclude input movie
+    scores = scores.drop(labels=[movie_title])   
     return scores.head(top_n).index.tolist()
 
 
-# ----------------------------------------
-# Main Streamlit UI
-# ----------------------------------------
+
 def main():
     st.title("🎥 Movie Recommendation System")
     st.markdown(
@@ -77,7 +73,7 @@ def main():
     )
     st.markdown("---")
 
-    # ---- Load data ----
+    
     try:
         movies, ratings = load_data()
     except FileNotFoundError:
@@ -90,14 +86,14 @@ def main():
         st.error(f"Error loading data: {e}")
         st.stop()
 
-    # ---- Build similarity matrix ----
+    
     try:
         sim_df = build_similarity_matrix(movies, ratings)
     except Exception as e:
         st.error(f"Error building recommendation engine: {e}")
         st.stop()
 
-    # ---- User input ----
+    
     movie_input = st.text_input(
         "🔍 Enter a movie name",
         placeholder="e.g. Toy Story (1995)"
@@ -108,13 +104,13 @@ def main():
         min_value=1, max_value=20, value=5
     )
 
-    # ---- Recommend button ----
+    
     if st.button("✨ Recommend"):
         if not movie_input.strip():
             st.warning("Please enter a movie name first.")
             return
 
-        # Case-insensitive partial match against all known titles
+        
         matches = [
             title for title in sim_df.index
             if movie_input.strip().lower() in title.lower()
@@ -127,7 +123,7 @@ def main():
             )
             return
 
-        selected = matches[0]   # use the first match
+        selected = matches[0]   
         recommendations = recommend_movies(selected, sim_df, top_n=top_n)
 
         if not recommendations:
